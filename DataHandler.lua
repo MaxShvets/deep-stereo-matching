@@ -21,6 +21,8 @@ function DataHandler:__init( data_version, data_root, util_root, num_tr_img, num
         error('data_version should be either kitti2012 or kitti2015')
     end
 
+    print('Memory usage (intial): '..collectgarbage('count'))
+
     self.batch_size = batch_size
     self.psz = psz
     self.pSize = 2*psz + 1
@@ -29,15 +31,22 @@ function DataHandler:__init( data_version, data_root, util_root, num_tr_img, num
     self.tr_ptr = 0
     self.curr_epoch = 0
 
-    self.file_ids = torch.FloatTensor(torch.FloatStorage(paths.concat(util_root, 'myPerm.bin')))
-    self.tr_loc = torch.FloatTensor(torch.FloatStorage(('%s/tr_%d_%d_%d.bin'):format(util_root, num_tr_img, self.psz, self.half_range))):view(-1,5)
+    self.file_ids = torch.FloatTensor(torch.FloatStorage(paths.concat(util_root, 'myPerm.bin'), false, num_tr_img + num_val_img))
+    print('Memory usage (loaded permutation): '..collectgarbage('count'))
+    self.tr_loc = torch.FloatTensor(torch.FloatStorage(('%s/tr_%d_%d_%d.bin'):format(util_root, num_tr_img, self.psz, self.half_range), false, 87165045)):view(-1,5)
+    print('Memory usage (loaded training utils): '..collectgarbage('count'))
+    -- print(self.tr_loc)
     if num_val_img == 0 then
         self.val_loc = self.tr_loc
         print('validate on training set..')
     else
-        self.val_loc = torch.FloatTensor(torch.FloatStorage(('%s/val_%d_%d_%d.bin'):format(util_root, num_val_img, self.psz, self.half_range))):view(-1,5)
+	validation_utils_path = ('%s/val_%d_%d_%d.bin'):format(util_root, num_val_img, self.psz, self.half_range)
+	print('Loading validation utils from '..validation_utils_path)
+        self.val_loc = torch.FloatTensor(torch.FloatStorage(validation_utils_path, false, 17801625)):view(-1,5)
+	print('Memory usage (loaded validation utils): '..collectgarbage('count'))
     end
-
+    
+    print(#self.tr_loc, #self.val_loc)
     print(string.format('#training locations: %d -- #valuation locations: %d', (#self.tr_loc)[1], (#self.val_loc)[1]))
 
     self.ldata = {}
@@ -65,6 +74,7 @@ function DataHandler:__init( data_version, data_root, util_root, num_tr_img, num
 
         self.ldata[fn] = l_img
         self.rdata[fn] = r_img
+        print('Memory usage (loaded a pair of images): '..collectgarbage('count'))
     end
 
 
