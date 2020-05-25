@@ -169,10 +169,22 @@ for i = opt.start_id, opt.start_id+opt.n-1 do
 
             if end_id+x_off >= 1 and img_w >= start_id+x_off then
                 --print(math.max(start_id,-x_off+1), math.min(end_id, img_w-x_off))
+		left_start = math.max(start_id,-x_off+1)
+		left_end = math.min(end_id, img_w-x_off)
+		print("Left range", left_start, left_end)
                 local l = left_feat[{{}, {}, {}, {math.max(start_id,-x_off+1), math.min(end_id, img_w-x_off)}}]
+		print("Right dimensions")
+		print(#l)
+		right_start = math.max(1,x_off+start_id)
+		right_end = math.min(img_w,end_id+x_off)
+		print("Right range", right_start, right_end)
                 local r = right_feat[{{},{}, {}, {math.max(1,x_off+start_id), math.min(img_w,end_id+x_off)}}]
+		print("Right dimensions")
+		print(#r)
 
                 local tmp = top:forward({l,r})
+		print("Result dimensions")
+		print(#tmp)
                 unary_vol[{{},{math.max(start_id, -x_off+1), math.min(end_id, img_w-x_off)},loc_idx}]:copy(tmp)
                 
                 right_unary_vol[{{},{math.max(1,x_off+start_id), math.min(img_w,end_id+x_off)},loc_idx}]:copy(tmp)

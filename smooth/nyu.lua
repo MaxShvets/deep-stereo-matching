@@ -91,24 +91,26 @@ end
 function smooth.nyu.post( disp, left_vol)
 	-- disp[1]: left prediction, disp: 0 .. max-1
 	local max_disp = left_vol:size(2)
-	local outlier = torch.CudaTensor():resizeAs(disp[1]):zero()
-	adcensus.outlier_detection(disp[1], disp[2], outlier, max_disp)
+	local disp1 = disp[1]:cuda()
+	local disp2 = disp[2]:cuda()
+	local outlier = torch.CudaTensor():resizeAs(disp1):zero()
+	adcensus.outlier_detection(disp1, disp2, outlier, max_disp)
 
 	if smooth.nyu.occlusion == 1 then
-		disp[1] = adcensus.interpolate_occlusion(disp[1], outlier)
-		disp[1] = adcensus.interpolate_mismatch(disp[1], outlier)
+		disp[1] = adcensus.interpolate_occlusion(disp1, outlier)
+		disp[1] = adcensus.interpolate_mismatch(disp1, outlier)
 	end
 
 	if smooth.nyu.subpixel == 1 then
-		disp[1] = adcensus.subpixel_enchancement(disp[1], left_vol, max_disp)
+		disp[1] = adcensus.subpixel_enchancement(disp1, left_vol, max_disp)
 	end
 
 	if smooth.nyu.median == 1 then
-		disp[1] = adcensus.median2d(disp[1], 5)
+		disp[1] = adcensus.median2d(disp1, 5)
 	end
 
 	if smooth.nyu.bilateral == 1 then
-		disp[1] = adcensus.mean2d(disp[1], gaussian(smooth.nyu.blur_sigma):cuda(), smooth.nyu.blur_t)
+		disp[1] = adcensus.mean2d(disp1, gaussian(smooth.nyu.blur_sigma):cuda(), smooth.nyu.blur_t)
 	end
 
 	return disp[1], outlier

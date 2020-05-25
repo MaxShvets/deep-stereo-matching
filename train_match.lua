@@ -102,6 +102,7 @@ function train()
 
         local left, right, targets = my_dataset:next_batch()
         local feval = function(x)
+	    print('Evaluating loss function')
             if x ~= parameters then parameters:copy(x) end
             gradParameters:zero()
             local outputs = model:forward({left, right})
@@ -110,8 +111,13 @@ function train()
             model:backward({left, right}, df_do)
 
             -- 3 pixel error
+	    print('Evaluating error')
             local _,y = outputs:max(2)
-            acc_count = acc_count + (torch.abs(y-targets):le(3):sum())
+	    diff = y:cuda() - targets
+	    abs_diff = torch.abs(diff)
+	    le = abs_diff:le(3)
+	    le_sum = le:sum()
+            acc_count = acc_count + le_sum
 
             return f,gradParameters
         end
@@ -131,6 +137,7 @@ function evaluate()
     model:evaluate()
     print(c.blue '==>'.." validation")
     local l, r, tar = my_dataset:get_eval_cuda()
+    print(#l, #r, #tar)
 
     -- tar:mul(-1):add(opt.max_disp+1)
 
@@ -139,7 +146,7 @@ function evaluate()
     acc_count = 0
     for i=1,n,opt.tb do
         _,y = model:forward({l:narrow(1,i,opt.tb), r:narrow(1,i,opt.tb)}):max(2)
-        acc_count = acc_count + (torch.abs(y-tar:narrow(1,i,opt.tb)):le(3):sum())
+        acc_count = acc_count + (torch.abs(y:cuda()-tar:narrow(1,i,opt.tb)):le(3):sum())
         -- print(y, tar)
     end
 
